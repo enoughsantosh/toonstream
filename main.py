@@ -116,30 +116,37 @@ def get_category(type: str = Query(..., title="Anime Category")):
     return {"category": type, "results": movies_list}
 
 
-def scrape_anime_details(search_query):
-    url = f"https://toonstream.co/?s={search_query}"
-    response = requests.get(url)
+from fastapi import FastAPI
+import requests
+from bs4 import BeautifulSoup
+
+app = FastAPI()
+
+@app.get("/search/")
+def scrape_anime_details(q: str):
+    url = f"https://toonstream.co/?s={q}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
         return {"error": "Failed to retrieve data"}
 
-    
-    # Parse HTML response
     soup = BeautifulSoup(response.text, "lxml")
-    items = soup.find_all("li", class_="post")[:10]  # Extract first 10 search items
+    items = soup.select("ul.post-lst li")[:10]  # More specific selection
 
-    # Extract data
     results = []
     for item in items:
-        title = item.find("h2", class_="entry-title").text.strip()
-        image = item.find("img")["src"]
-        link = item.find("a", class_="lnk-blk")["href"]
+        title_tag = item.find("h2", class_="entry-title")
+        img_tag = item.find("img")
+        link_tag = item.find("a", class_="lnk-blk")
 
-        results.append({"title": title, "image": image, "link": link})
+        if title_tag and img_tag and link_tag:
+            title = title_tag.text.strip()
+            image = img_tag["src"]
+            link = link_tag["href"]
 
-    # Return JSON response
+            results.append({"title": title, "image": image, "link": link})
+
     return results
-
-@app.get("/search/")
-def search_anime(q: str):
-    return scrape_anime_details(q)
