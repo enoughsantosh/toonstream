@@ -99,12 +99,15 @@ def get_category(type: str = Query(..., title="Anime Category")):
         title_tag = item.select_one("h2.entry-title")
         image_tag = item.select_one("img")
         link_tag = item.select_one("a.lnk-blk")
+        link = link_tag.get("href")
+        parsed_link = urlparse(link).path
+        
 
         if title_tag and image_tag and link_tag:
             movies_list.append({
                 "title": title_tag.text.strip(),
                 "image": image_tag.get("data-src") or image_tag.get("src"),
-                "link": link_tag.get("href")
+                "link": parsedlink
             })
 
     if not movies_list:
