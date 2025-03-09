@@ -234,8 +234,7 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
         # Extract movie-specific details
         duration_tag = soup.select_one(".duration")
         duration = duration_tag.text.strip() if duration_tag else None
-        # Extract post ID from <article id="post-153">
-        post_id = soup.find("article", class_="post")["id"].replace("post-", "")
+        
 
         sources = []  
         for iframe in soup.select(".video iframe"):  
@@ -245,7 +244,6 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
         return {
             "type": "movie",
             "title": title,
-            "post_id": post_id,
             "thumbnail": thumbnail,
             "background_image": background_image,
             "description": description,
