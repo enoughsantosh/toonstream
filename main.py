@@ -107,7 +107,7 @@ def get_category(type: str = Query(..., title="Anime Category")):
             movies_list.append({
                 "title": title_tag.text.strip(),
                 "image": image_tag.get("data-src") or image_tag.get("src"),
-                "link": parsedlink
+                "link": parsed_link
             })
 
     if not movies_list:
