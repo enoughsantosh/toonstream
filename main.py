@@ -32,39 +32,41 @@ def scrape_toonstream():
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch ToonStream: {str(e)}")
     
-    
-        soup = BeautifulSoup(response.text, "html.parser")
+    soup = BeautifulSoup(response.text, "html.parser")
 
-        latest_series = []
-        latest_movies = []
+    latest_series = []
+    latest_movies = []
 
-        # Extract Latest Series
-        series_items = soup.select(".gs_logo_single--wrapper")
-        if not series_items:
-            raise HTTPException(status_code=500, detail="Failed to find latest series section.")
+    # Extract Latest Series
+    series_items = soup.select(".gs_logo_single--wrapper")
+    if not series_items:
+        raise HTTPException(status_code=500, detail="Failed to find latest series section.")
 
-        for series in series_items[:20]:
-            title = series.find("img")["title"] if series.find("img") else "Unknown Title"
-            image = series.find("img")["data-src"] if series.find("img") and "data-src" in series.find("img").attrs else series.find("img")["src"]
-            link = "https://toonstream.co" + series.find("a")["href"] if series.find("a") else "#"
+    for series in series_items[:20]:
+        img_tag = series.find("img")
+        title = img_tag["title"] if img_tag and "title" in img_tag.attrs else "Unknown Title"
+        image = img_tag["data-src"] if img_tag and "data-src" in img_tag.attrs else img_tag["src"] if img_tag else ""
+        link_tag = series.find("a")
+        link = "https://toonstream.co" + link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
 
-            latest_series.append({"title": title, "image": image, "link": link})
+        latest_series.append({"title": title, "image": image, "link": link})
 
-        # Extract Latest Movies
-        movie_items = soup.select(".post.dfx.fcl.movies.fa-play-circle")
-        if not movie_items:
-            raise HTTPException(status_code=500, detail="Failed to find latest movies section.")
+    # Extract Latest Movies
+    movie_items = soup.select(".post.episodes.fa-play-circle")
+    if not movie_items:
+        raise HTTPException(status_code=500, detail="Failed to find latest movies section.")
 
-        for movie in movie_items[:20]:
-            title = movie.find("h2", class_="entry-title").text.strip() if movie.find("h2") else "Unknown Title"
-            image = movie.find("img")["data-src"] if movie.find("img") and "data-src" in movie.find("img").attrs else movie.find("img")["src"]
-            link = movie.find("a", class_="lnk-blk")["href"] if movie.find("a", class_="lnk-blk") else "#"
+    for movie in movie_items[:20]:
+        title_tag = movie.find("h2", class_="entry-title")
+        title = title_tag.text.strip() if title_tag else "Unknown Title"
+        img_tag = movie.find("img")
+        image = img_tag["data-src"] if img_tag and "data-src" in img_tag.attrs else img_tag["src"] if img_tag else ""
+        link_tag = movie.find("a", class_="lnk-blk")
+        link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
 
-            latest_movies.append({"title": title, "image": image, "link": link})
+        latest_movies.append({"title": title, "image": image, "link": link})
 
-        return {
-            "latest_series": latest_series,
-            "latest_movies": latest_movies
-        }
-    
-    
+    return {
+        "latest_series": latest_series,
+        "latest_movies": latest_movies
+    }
