@@ -52,7 +52,7 @@ def scrape_toonstream():
         latest_series.append({"title": title, "image": image, "link": link})
 
     # Extract Latest Movies
-    movie_items = soup.select(".post.episodes.fa-play-circle")
+    movie_items = soup.select(".widget_list_movies_series-2-all")
     if not movie_items:
         raise HTTPException(status_code=500, detail="Failed to find latest movies section.")
 
