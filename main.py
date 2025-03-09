@@ -189,3 +189,36 @@ def search_animesug(term: str):
     else:
         return {"error": "Failed to fetch data", "status_code": response.status_code}
         
+
+
+@app.get("/series/")
+def scrape_anime_details(q: str):
+    url = f"https://toonstream.co{q}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        return {"error": "Failed to retrieve data"}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    title = soup.find("h1", class_="entry-title").text.strip()
+    thumbnail = soup.find("div", class_="post-thumbnail").find("img")["data-src"]
+    background = soup.find("div", class_="bghd").find("img")["src"] if soup.find("div", class_="bghd") else None
+    description = soup.find("div", class_="description").find("p").text.strip()
+    seasons = [s.text.strip() for s in soup.select(".aa-cnt .sel-temp a")]
+
+    no_of_seasons = len(seasons)
+    no_of_episodes = int(soup.find("span", class_="episodes").find("span").text.strip())
+
+    return {
+        "title": title,
+        "thumbnail": thumbnail,
+        "background_image": background,
+        "description": description,
+        "no_of_seasons": no_of_seasons,
+        "no_of_episodes": no_of_episodes,
+        "seasons_available": seasons,
+    }
