@@ -51,7 +51,7 @@ def scrape_toonstream():
         link_tag = series.find("a", class_="lnk-blk")
         link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
         parsed_link = urlparse(link).path
-        latest_series.append({"title": title, "image": image, "link": parsed_link})
+        latest_series.append({"title": title, "image": image, "link": link})
     # Extract Latest Movies
     movie_items = soup.select("#widget_list_movies_series-3-all ul.post-lst li")
     
@@ -68,45 +68,46 @@ def scrape_toonstream():
         link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
         parsed_link = urlparse(link).path  # Extracts only the path
 
-        latest_movies.append({"title": title, "image": image, "link": parsed_link})
+        latest_movies.append({"title": title, "image": image, "link": link})
 
     return {
         "latest_series": latest_series,
         "latest_movies": latest_movies
     }
 
+
+# ✅ FIXED: Fully synchronous `/type` endpoint
 @app.get("/type")
-async def get_category(type: str = Query(..., title="Anime Category")):
-    """Categories from the given type"""
+def get_category(type: str = Query(..., title="Anime Category")):
+    """Fetch anime/movies from the given category type"""
+    url = f"https://toonstream.co/category/{type}"
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    base = f"https://toonstream.co/category/{type}"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(base, headers=headers)
-
-    if response.status_code != 200:
-        return {"error": "Failed to fetch anime details"}
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch category details: {str(e)}")
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Extract series/movies
     movies_list = []
-    for item in soup.select(".post-lst .post"):
-        title_tag = item.select_one(".entry-title")
-        image_tag = item.select_one(".post-thumbnail img")
+    for item in soup.select(".post-lst li"):  # ✅ Fixed selector
+        title_tag = item.select_one("h2.entry-title")
+        image_tag = item.select_one("img")
         link_tag = item.select_one("a.lnk-blk")
 
         if title_tag and image_tag and link_tag:
-            title = title_tag.text.strip()
-            image = image_tag.get("data-src") or image_tag.get("src")
-            link = link_tag.get("href")
-
             movies_list.append({
-                "title": title,
-                "image": image,
-                "link": link
+                "title": title_tag.text.strip(),
+                "image": image_tag.get("data-src") or image_tag.get("src"),
+                "link": link_tag.get("href")
             })
+
+    if not movies_list:
+        return {"error": "No results found"}
 
     return {"category": type, "results": movies_list}
