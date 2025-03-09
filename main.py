@@ -38,7 +38,7 @@ def scrape_toonstream():
     latest_movies = []
 
     # Extract Latest Series
-    series_items = soup.select(".gs_logo_single--wrapper")
+    series_items = soup.select("#widget_list_movies_series-2-all ul.post-lst li")
     if not series_items:
         raise HTTPException(status_code=500, detail="Failed to find latest series section.")
 
@@ -52,7 +52,7 @@ def scrape_toonstream():
         latest_series.append({"title": title, "image": image, "link": link})
 
     # Extract Latest Movies
-    movie_items = soup.select("#widget_list_movies_series-2-all ul.post-lst li")
+    movie_items = soup.select("")
     
     if not movie_items:
         raise HTTPException(status_code=500, detail="Failed to find latest movies section.")
