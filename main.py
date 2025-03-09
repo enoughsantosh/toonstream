@@ -177,11 +177,12 @@ def search_animesug(term: str):
                 anime_type = a_tag.find("span").text if a_tag.find("span") else "unknown"
                 anime_title = a_tag.text.strip().replace(anime_type, "").strip()
                 anime_url = a_tag["href"]
+                parsed_link = urlparse(anime_url).path
 
                 results.append({
                     "title": anime_title,
                     "type": anime_type,
-                    "url": anime_url
+                    "url": parsed_link
                 })
 
         return results
