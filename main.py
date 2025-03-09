@@ -114,3 +114,32 @@ def get_category(type: str = Query(..., title="Anime Category")):
         return {"error": "No results found"}
 
     return {"category": type, "results": movies_list}
+
+
+def scrape_anime_details(search_query):
+    url = f"https://toonstream.co/search/{search_query}"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return {"error": "Failed to retrieve data"}
+
+    
+    # Parse HTML response
+    soup = BeautifulSoup(response.text, "lxml")
+    items = soup.find_all("li", class_="post")[:10]  # Extract first 10 search items
+
+    # Extract data
+    results = []
+    for item in items:
+        title = item.find("h2", class_="entry-title").text.strip()
+        image = item.find("img")["src"]
+        link = item.find("a", class_="lnk-blk")["href"]
+
+        results.append({"title": title, "image": image, "link": link})
+
+    # Return JSON response
+    return results
+
+@app.get("/search/")
+def search_anime(q: str):
+    return scrape_anime_details(q)
