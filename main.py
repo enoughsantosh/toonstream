@@ -48,8 +48,8 @@ def scrape_toonstream():
         img_tag = series.find("img")
         image = img_tag["data-src"] if img_tag and "data-src" in img_tag.attrs else img_tag["src"] if img_tag else ""
         link_tag = series.find("a", class_="lnk-blk")
-        link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#" latest_series.append({"title": title, "image": image, "link": link})
-
+        link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
+        latest_series.append({"title": title, "image": image, "link": link})
     # Extract Latest Movies
     movie_items = soup.select("#widget_list_movies_series-3-all ul.post-lst li")
     
