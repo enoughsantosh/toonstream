@@ -233,8 +233,11 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
         # Extract movie-specific details
         duration_tag = soup.select_one(".duration")
         duration = duration_tag.text.strip() if duration_tag else None
-        sources = [iframe.get("data-src") or iframe.get("src") for iframe in soup.select(".video iframe") if iframe.get("src")]
-
+        sources = []  
+        for iframe in soup.select(".video iframe"):  
+            src = iframe.get("data-src") or iframe.get("src")  
+            if src:  
+                sources.append(src)  
         return {
             "type": "movie",
             "title": title,
