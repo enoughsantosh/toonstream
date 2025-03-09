@@ -74,3 +74,39 @@ def scrape_toonstream():
         "latest_series": latest_series,
         "latest_movies": latest_movies
     }
+
+@app.get("/type")
+async def get_category(type: str = Query(..., title="Anime Category")):
+    """Categories from the given type"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    base = f"https://toonstream.co/category/{type}"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(base, headers=headers)
+
+    if response.status_code != 200:
+        return {"error": "Failed to fetch anime details"}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Extract series/movies
+    movies_list = []
+    for item in soup.select(".post-lst .post"):
+        title_tag = item.select_one(".entry-title")
+        image_tag = item.select_one(".post-thumbnail img")
+        link_tag = item.select_one("a.lnk-blk")
+
+        if title_tag and image_tag and link_tag:
+            title = title_tag.text.strip()
+            image = image_tag.get("data-src") or image_tag.get("src")
+            link = link_tag.get("href")
+
+            movies_list.append({
+                "title": title,
+                "image": image,
+                "link": link
+            })
+
+    return {"category": type, "results": movies_list}
