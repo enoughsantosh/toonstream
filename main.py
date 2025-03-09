@@ -146,7 +146,8 @@ def scrape_anime_details(q: str):
             title = title_tag.text.strip()
             image = img_tag["src"]
             link = link_tag["href"]
+            parsed_link = urlparse(link).path
 
-            results.append({"title": title, "image": image, "link": link})
+            results.append({"title": title, "image": image, "link": parsed_link})
 
     return results
