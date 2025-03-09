@@ -222,3 +222,57 @@ def scrape_anime_details(q: str):
         "no_of_episodes": no_of_episodes,
         "seasons_available": seasons,
     }
+
+from fastapi import FastAPI
+import requests
+from bs4 import BeautifulSoup
+
+app = FastAPI()
+
+@app.get("/movies/")
+def scrape_anime_details(q: str):
+    url = f"https://toonstream.co{q}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        return {"error": "Failed to retrieve data"}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Extract title
+    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None
+
+    # Extract thumbnail
+    thumbnail_tag = soup.select_one(".post-thumbnail img")
+    thumbnail = thumbnail_tag["data-src"] if thumbnail_tag else None
+
+    # Extract background image (if available)
+    background_tag = soup.select_one(".bghd img")
+    background_image = background_tag["src"] if background_tag else None
+
+    # Extract description
+    description_tag = soup.select_one(".description p")
+    description = description_tag.text.strip() if description_tag else None
+
+    # Extract duration
+    duration_tag = soup.select_one(".duration")
+    duration = duration_tag.text.strip() if duration_tag else None
+
+    # Extract video sources
+    sources = []
+    for iframe in soup.select(".video iframe"):
+        src = iframe.get("data-src") or iframe.get("src")
+        if src:
+            sources.append(src)
+
+    return {
+        "title": title,
+        "thumbnail": thumbnail,
+        "background_image": background_image,
+        "description": description,
+        "duration": duration,
+        "sources": sources,
+    }
