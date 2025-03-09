@@ -18,7 +18,7 @@ app.add_middleware(
 def home():
     return {"message": "Anime Search API is running!"}
 # Homepage 
-@app.get("/scrape")
+@app.get("/home")
 def scrape_toonstream():
     url = "https://toonstream.co/"
     
@@ -32,7 +32,7 @@ def scrape_toonstream():
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch ToonStream: {str(e)}")
     
-    try:
+    
         soup = BeautifulSoup(response.text, "html.parser")
 
         latest_series = []
@@ -67,5 +67,4 @@ def scrape_toonstream():
             "latest_movies": latest_movies
         }
     
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error parsing the website: {str(e)}")
+    
