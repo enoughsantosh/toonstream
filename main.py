@@ -117,7 +117,7 @@ def get_category(type: str = Query(..., title="Anime Category")):
 
 
 def scrape_anime_details(search_query):
-    url = f"https://toonstream.co/search/{search_query}"
+    url = f"https://toonstream.co/?s={search_query}"
     response = requests.get(url)
 
     if response.status_code != 200:
