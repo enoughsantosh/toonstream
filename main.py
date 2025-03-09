@@ -30,7 +30,7 @@ def scrape_toonstream():
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()  # Raise HTTP errors (like 404, 500)
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch ToonStream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch Api: {str(e)}")
     
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -43,13 +43,12 @@ def scrape_toonstream():
         raise HTTPException(status_code=500, detail="Failed to find latest series section.")
 
     for series in series_items[:20]:
+        title_tag = series.find("h2", class_="entry-title")
+        title = title_tag.text.strip() if title_tag else "Unknown Title"
         img_tag = series.find("img")
-        title = img_tag["title"] if img_tag and "title" in img_tag.attrs else "Unknown Title"
         image = img_tag["data-src"] if img_tag and "data-src" in img_tag.attrs else img_tag["src"] if img_tag else ""
-        link_tag = series.find("a")
-        link = "https://toonstream.co" + link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
-
-        latest_series.append({"title": title, "image": image, "link": link})
+        link_tag = series.find("a", class_="lnk-blk")
+        link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#" latest_series.append({"title": title, "image": image, "link": link})
 
     # Extract Latest Movies
     movie_items = soup.select("#widget_list_movies_series-3-all ul.post-lst li")
