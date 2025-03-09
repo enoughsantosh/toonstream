@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
 import requests
 import httpx
+from urllib.parse import urlparse
 from pydantic import BaseModel
 from bs4 import BeautifulSoup
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,9 +63,11 @@ def scrape_toonstream():
         img_tag = movie.find("img")
         image = img_tag["data-src"] if img_tag and "data-src" in img_tag.attrs else img_tag["src"] if img_tag else ""
         link_tag = movie.find("a", class_="lnk-blk")
+        
         link = link_tag["href"] if link_tag and "href" in link_tag.attrs else "#"
+        parsed_link = urlparse(link).path  # Extracts only the path
 
-        latest_movies.append({"title": title, "image": image, "link": link})
+        latest_movies.append({"title": title, "image": image, "link": parsed_link})
 
     return {
         "latest_series": latest_series,
