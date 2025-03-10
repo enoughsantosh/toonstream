@@ -217,11 +217,13 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
         no_of_seasons = len(seasons)
         episodes_tag = soup.find("span", class_="episodes")
         no_of_episodes = int(episodes_tag.find("span").text.strip()) if episodes_tag else None
+        post_id = soup.body.get("class")
+        post_id = next((cls.split("-")[-1] for cls in post_id if cls.startswith("postid-")), None)
 
         return {
             "type": "series",
             "title": title,
-            "post_id": "post_id",
+            "post_id": post_id,
             "thumbnail": thumbnail,
             "background_image": background_image,
             "description": description,
