@@ -117,7 +117,7 @@ def get_category(type: str = Query(..., title="Anime Category")):
 
 
 
-@app.get("/search/")
+@app.get("/search")
 def scrape_anime_details(q: str):
     url = f"https://toonstream.co/?s={q}"
     headers = {
@@ -148,7 +148,7 @@ def scrape_anime_details(q: str):
     return results
 
 
-@app.get("/searchsug/")
+@app.get("/searchsug")
 def search_animesug(term: str):
     url = "https://toonstream.co/wp-admin/admin-ajax.php"
     headers = {
@@ -188,7 +188,7 @@ def search_animesug(term: str):
 
 
 
-@app.get("/scrape/")
+@app.get("/scrape")
 def scrape_anime_details(q: str = Query(..., description="Path of the series or movie")):
     url = f"https://toonstream.co{q}"
     headers = {
@@ -255,3 +255,51 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
 
     else:
         return {"error": "Invalid path. Must start with /series/ or /movies/"}
+
+async def fetch_season_data(season: int, post: int):
+    url = "https://toonstream.co/wp-admin/admin-ajax.php"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0"
+    }
+    data = {
+        "action": "action_select_season",
+        "season": season,
+        "post": post
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, data=data)
+
+        if response.status_code != 200:
+            return {"error": f"Failed to fetch page: {response.status_code}"}
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Get episodes
+        episodes = []
+        for episode in soup.select(".post.episodes"):
+            episode_title_tag = episode.select_one(".entry-title")
+            episode_link_tag = episode.select_one(".lnk-blk")
+            episode_image_tag = episode.select_one(".post-thumbnail img")
+
+            if episode_title_tag and episode_link_tag and episode_image_tag:
+                episodes.append({
+                    "title": episode_title_tag.text.strip(),
+                    "link": episode_link_tag["href"],
+                    "image": episode_image_tag["src"]
+                })
+
+        return {
+            
+            "episodes": episodes
+        }
+    
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/season")
+async def get_season_episodes(season: int = Query(...), post: int = Query(...)):
+    data = await fetch_season_data(season, post)
+    return data
