@@ -372,8 +372,8 @@ def scrape_anime_episode(url):
 
     return {
         "title": title,
-        "thumbnail": thumbnail,
-        "background_image": background_image,
+        "thumbnail": background_image,
+        "background_image": thumbnail,
         "description": description,
         "duration": duration,
         "streaming_sources": sources,
