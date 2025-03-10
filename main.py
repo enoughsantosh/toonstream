@@ -353,7 +353,7 @@ def scrape_anime_episode(url):
             episodes.append({
                 "title": episode_title_tag.text.strip(),
                 "link": episode_link_tag["href"],
-                "image": episode_image_tag["src"]
+                "image": episode_image_tag["data-src"]
             })
 
     # Get recommended series
@@ -367,7 +367,7 @@ def scrape_anime_episode(url):
             recommended_series.append({
                 "title": rec_title_tag.text.strip(),
                 "link": rec_link_tag["href"],
-                "image": rec_image_tag["src"]
+                "image": rec_image_tag["data-src"]
             })
 
     return {
