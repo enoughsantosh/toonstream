@@ -326,7 +326,7 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
     
     try:
         response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
+        response.raise_for_status()
     except requests.RequestException as e:
         return {"error": f"Failed to retrieve data: {str(e)}"}
     
@@ -334,6 +334,14 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
 
     # Extract common details
     title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None
+    
+    # Extract post ID from body class
+    post_id = None
+    body_classes = soup.find('body').get('class', [])
+    for cls in body_classes:
+        if cls.startswith('postid-'):
+            post_id = cls.split('-')[-1]
+            break
     
     # Thumbnail extraction
     thumbnail_tag = soup.select_one(".post-thumbnail img")
@@ -352,12 +360,12 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
         seasons = [s.text.strip() for s in soup.select(".choose-season .aa-cnt li a")]
         no_of_seasons = len(seasons) if seasons else 0
         
-        # Episode count extraction - more robust approach
+        # Episode count extraction
         episodes_info = soup.select_one(".episodes")
         no_of_episodes = None
         if episodes_info:
             episode_spans = episodes_info.find_all("span")
-            if len(episode_spans) >= 2:  # Assuming the count is in the second span
+            if len(episode_spans) >= 2:
                 try:
                     no_of_episodes = int(episode_spans[1].text.strip())
                 except (ValueError, IndexError):
@@ -370,19 +378,18 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
             ep_title = episode.select_one(".entry-title").text.strip() if episode.select_one(".entry-title") else None
             ep_url = episode.select_one("a.lnk-blk")["href"] if episode.select_one("a.lnk-blk") else None
             episodes.append({
-                "episode_number": num,
+                "episodes_number": num,
                 "title": ep_title,
                 "url": ep_url
             })
 
-        # Extract genres
+        # Extract genres and cast
         genres = [a.text.strip() for a in soup.select(".genres a")] if soup.select(".genres a") else []
-        
-        # Extract cast
         cast = [a.text.strip() for a in soup.select(".loadactor a")] if soup.select(".loadactor a") else []
 
         return {
             "type": "series",
+            "post_id": post_id,
             "title": title,
             "thumbnail": thumbnail,
             "background_image": background_image,
@@ -407,14 +414,13 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
             if src:  
                 sources.append(src)
                 
-        # Extract genres
+        # Extract genres and cast
         genres = [a.text.strip() for a in soup.select(".genres a")] if soup.select(".genres a") else []
-        
-        # Extract cast
         cast = [a.text.strip() for a in soup.select(".loadactor a")] if soup.select(".loadactor a") else []
 
         return {
             "type": "movie",
+            "post_id": post_id,
             "title": title,
             "thumbnail": thumbnail,
             "background_image": background_image,
