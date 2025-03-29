@@ -185,113 +185,6 @@ def search_animesug(term: str):
         return {"error": "Failed to fetch data", "status_code": response.status_code}
         
 
-
-
-
-
-            
-@app.get("/scrape")
-def scrape_anime_details(q: str = Query(..., description="Path of the series or movie")):
-    url = f"https://toonstream.co{q}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        return {"error": "Failed to retrieve data"}
-    
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    # Extract common details
-    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None
-    
-    # Thumbnail extraction
-    thumbnail_tag = soup.select_one(".post-thumbnail img")
-    thumbnail = thumbnail_tag["src"] if thumbnail_tag and thumbnail_tag.has_attr("src") else None
-    
-    # Background image extraction
-    background_tag = soup.select_one(".bghd img.TPostBg")
-    background_image = background_tag["src"] if background_tag else None
-    
-    description_tag = soup.select_one(".description p")
-    description = description_tag.text.strip() if description_tag else None
-     
-    # Check if it's a series or a movie based on the URL pattern
-    if q.startswith("/series/"):
-        # Extract series-specific details
-        seasons = [s.text.strip() for s in soup.select(".choose-season .aa-cnt li a")]
-        no_of_seasons = len(seasons)
-        
-        # Episode count extraction
-        episodes_tag = soup.select_one(".episodes span")
-        no_of_episodes = int(episodes_tag.find("span").text.strip()) if episodes_tag else None
-        
-        # Extract all episodes
-        episodes = []
-        for episode in soup.select("#episode_by_temp li"):
-            num = episode.select_one(".num-epi").text.strip() if episode.select_one(".num-epi") else None
-            ep_title = episode.select_one(".entry-title").text.strip() if episode.select_one(".entry-title") else None
-            ep_url = episode.select_one("a.lnk-blk")["href"] if episode.select_one("a.lnk-blk") else None
-            episodes.append({
-                "episode_number": num,
-                "title": ep_title,
-                "url": ep_url
-            })
-
-        # Extract genres
-        genres = [a.text.strip() for a in soup.select(".genres a")]
-        
-        # Extract cast
-        cast = [a.text.strip() for a in soup.select(".loadactor a")]
-
-        return {
-            "type": "series",
-            "title": title,
-            "thumbnail": thumbnail,
-            "background_image": background_image,
-            "description": description,
-            "genres": genres,
-            "cast": cast,
-            "no_of_seasons": no_of_seasons,
-            "no_of_episodes": no_of_episodes,
-            "seasons_available": seasons,
-            "episodes": episodes
-        }
-
-    elif q.startswith("/movies/"):
-        # Extract movie-specific details
-        duration_tag = soup.select_one(".duration")
-        duration = duration_tag.text.strip() if duration_tag else None
-        
-        # Extract sources
-        sources = []  
-        for iframe in soup.select(".video iframe"):  
-            src = iframe.get("data-src") or iframe.get("src")  
-            if src:  
-                sources.append(src)
-                
-        # Extract genres
-        genres = [a.text.strip() for a in soup.select(".genres a")]
-        
-        # Extract cast
-        cast = [a.text.strip() for a in soup.select(".loadactor a")]
-
-        return {
-            "type": "movie",
-            "title": title,
-            "thumbnail": thumbnail,
-            "background_image": background_image,
-            "description": description,
-            "duration": duration,
-            "genres": genres,
-            "cast": cast,
-            "sources": sources,
-        }
-
-    else:
-        return {"error": "Invalid path. Must start with /series/ or /movies/"}
-
 async def fetch_season_data(season: int, post: int):
     url = "https://toonstream.co/wp-admin/admin-ajax.php"
     headers = {
@@ -420,3 +313,117 @@ def scrape_anime_episode(url):
 @app.get("/episodes")
 def get_anime_episode(url: str = Query(..., title="Episode URL")):
     return scrape_anime_episode(url)
+
+
+
+
+@app.get("/scrape")
+def scrape_anime_details(q: str = Query(..., description="Path of the series or movie")):
+    url = f"https://toonstream.co{q}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Raises an HTTPError for bad responses
+    except requests.RequestException as e:
+        return {"error": f"Failed to retrieve data: {str(e)}"}
+    
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Extract common details
+    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None
+    
+    # Thumbnail extraction
+    thumbnail_tag = soup.select_one(".post-thumbnail img")
+    thumbnail = thumbnail_tag["src"] if thumbnail_tag and thumbnail_tag.has_attr("src") else None
+    
+    # Background image extraction
+    background_tag = soup.select_one(".bghd img.TPostBg")
+    background_image = background_tag["src"] if background_tag else None
+    
+    description_tag = soup.select_one(".description p")
+    description = description_tag.text.strip() if description_tag else None
+     
+    # Check if it's a series or a movie based on the URL pattern
+    if q.startswith("/series/"):
+        # Extract series-specific details
+        seasons = [s.text.strip() for s in soup.select(".choose-season .aa-cnt li a")]
+        no_of_seasons = len(seasons) if seasons else 0
+        
+        # Episode count extraction - more robust approach
+        episodes_info = soup.select_one(".episodes")
+        no_of_episodes = None
+        if episodes_info:
+            episode_spans = episodes_info.find_all("span")
+            if len(episode_spans) >= 2:  # Assuming the count is in the second span
+                try:
+                    no_of_episodes = int(episode_spans[1].text.strip())
+                except (ValueError, IndexError):
+                    pass
+        
+        # Extract all episodes
+        episodes = []
+        for episode in soup.select("#episode_by_temp li"):
+            num = episode.select_one(".num-epi").text.strip() if episode.select_one(".num-epi") else None
+            ep_title = episode.select_one(".entry-title").text.strip() if episode.select_one(".entry-title") else None
+            ep_url = episode.select_one("a.lnk-blk")["href"] if episode.select_one("a.lnk-blk") else None
+            episodes.append({
+                "episode_number": num,
+                "title": ep_title,
+                "url": ep_url
+            })
+
+        # Extract genres
+        genres = [a.text.strip() for a in soup.select(".genres a")] if soup.select(".genres a") else []
+        
+        # Extract cast
+        cast = [a.text.strip() for a in soup.select(".loadactor a")] if soup.select(".loadactor a") else []
+
+        return {
+            "type": "series",
+            "title": title,
+            "thumbnail": thumbnail,
+            "background_image": background_image,
+            "description": description,
+            "genres": genres,
+            "cast": cast,
+            "no_of_seasons": no_of_seasons,
+            "no_of_episodes": no_of_episodes,
+            "seasons_available": seasons,
+            "episodes": episodes
+        }
+
+    elif q.startswith("/movies/"):
+        # Extract movie-specific details
+        duration_tag = soup.select_one(".duration")
+        duration = duration_tag.text.strip() if duration_tag else None
+        
+        # Extract sources
+        sources = []  
+        for iframe in soup.select(".video iframe"):  
+            src = iframe.get("data-src") or iframe.get("src")  
+            if src:  
+                sources.append(src)
+                
+        # Extract genres
+        genres = [a.text.strip() for a in soup.select(".genres a")] if soup.select(".genres a") else []
+        
+        # Extract cast
+        cast = [a.text.strip() for a in soup.select(".loadactor a")] if soup.select(".loadactor a") else []
+
+        return {
+            "type": "movie",
+            "title": title,
+            "thumbnail": thumbnail,
+            "background_image": background_image,
+            "description": description,
+            "duration": duration,
+            "genres": genres,
+            "cast": cast,
+            "sources": sources,
+        }
+
+    else:
+        return {"error": "Invalid path. Must start with /series/ or /movies/"}
