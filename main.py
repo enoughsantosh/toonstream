@@ -235,88 +235,6 @@ async def get_season_episodes(season: int = Query(...), post: int = Query(...)):
 
 
 
-
-def scrape_anime_episode(url):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-
-    if response.status_code != 200:
-        return {"error": f"Failed to fetch page: {response.status_code}"}
-
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    # Get episode title
-    title = soup.find("title").text.strip() if soup.find("title") else "Unknown Title"
-
-    # Get thumbnail image
-    thumbnail_tag = soup.select_one(".post-thumbnail img")
-    thumbnail = thumbnail_tag["src"] if thumbnail_tag else "No Image"
-
-    # Get background image
-    background_tag = soup.select_one(".post-thumbnail img")
-    background_image = background_tag["data-src"] if background_tag and "data-src" in background_tag.attrs else thumbnail
-
-    # Get description
-    description_tag = soup.select_one(".description")
-    description = description_tag.text.strip() if description_tag else "No Description"
-
-    # Get duration
-    duration_tag = soup.select_one(".duration")
-    duration = duration_tag.text.strip() if duration_tag else "Unknown Duration"
-
-    # Get streaming sources
-    sources = []
-    for iframe in soup.find_all("iframe"):
-        src = iframe.get("src") or iframe.get("data-src")
-        if src:
-            sources.append(src)
-
-    # Get other episodes
-    episodes = []
-    for episode in soup.select(".post.episodes"):
-        episode_title_tag = episode.select_one(".entry-title")
-        episode_link_tag = episode.select_one(".lnk-blk")
-        episode_image_tag = episode.select_one(".post-thumbnail img")
-
-        if episode_title_tag and episode_link_tag and episode_image_tag:
-            episodes.append({
-                "title": episode_title_tag.text.strip(),
-                "link": episode_link_tag["href"],
-                "image": episode_image_tag["data-src"]
-            })
-
-    # Get recommended series
-    recommended_series = []
-    for rec in soup.select(".carousel .post"):
-        rec_title_tag = rec.select_one(".entry-title")
-        rec_link_tag = rec.select_one(".lnk-blk")
-        rec_image_tag = rec.select_one(".post-thumbnail img")
-
-        if rec_title_tag and rec_link_tag and rec_image_tag:
-            recommended_series.append({
-                "title": rec_title_tag.text.strip(),
-                "link": rec_link_tag["href"],
-                "image": rec_image_tag["data-src"]
-            })
-
-    return {
-        "title": title,
-        "thumbnail": background_image,
-        "background_image": thumbnail,
-        "description": description,
-        "duration": duration,
-        "streaming_sources": sources,
-        "other_episodes": episodes,
-        "recommended_series": recommended_series
-    }
-
-@app.get("/episodes")
-def get_anime_episode(url: str = Query(..., title="Episode URL")):
-    return scrape_anime_episode(url)
-
-
-
-
 @app.get("/scrape")
 def scrape_anime_details(q: str = Query(..., description="Path of the series or movie")):
     url = f"https://toonstream.co{q}"
@@ -433,3 +351,82 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
 
     else:
         return {"error": "Invalid path. Must start with /series/ or /movies/"}
+
+
+
+
+def scrape_anime_episode(url):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        return {"error": f"Failed to fetch page: {response.status_code}"}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Get episode title
+    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else "Unknown Title"
+
+    # Get thumbnail image
+    thumbnail_tag = soup.select_one(".post-thumbnail img")
+    thumbnail = thumbnail_tag["src"] if thumbnail_tag else "No Image"
+
+    # Get background image
+    background_tag = soup.select_one(".bghd img")
+    background_image = background_tag["src"] if background_tag else thumbnail
+
+    # Get description
+    description_tag = soup.select_one(".description")
+    description = description_tag.text.strip() if description_tag else "No Description"
+
+    # Get duration
+    duration_tag = soup.select_one(".duration")
+    duration = duration_tag.text.strip() if duration_tag else "Unknown Duration"
+
+    # Get streaming sources
+    sources = []
+    for iframe in soup.select(".video-player iframe"):
+        src = iframe.get("src") or iframe.get("data-src")
+        if src:
+            sources.append(src)
+
+    # Get other episodes
+    episodes = []
+    for episode in soup.select("#episode_by_temp .post"):
+        episode_title_tag = episode.select_one(".entry-title")
+        episode_link_tag = episode.find("a", class_="lnk-blk")
+        episode_image_tag = episode.select_one(".post-thumbnail img")
+
+        episodes.append({
+            "title": episode_title_tag.text.strip() if episode_title_tag else "Unknown Episode",
+            "link": episode_link_tag["href"] if episode_link_tag else "#",
+            "image": episode_image_tag["src"] if episode_image_tag else "No Image"
+        })
+
+    # Get recommended series
+    recommended_series = []
+    for rec in soup.select(".carousel .post"):
+        rec_title_tag = rec.select_one(".entry-title")
+        rec_link_tag = rec.find("a", class_="lnk-blk")
+        rec_image_tag = rec.select_one(".post-thumbnail img")
+
+        recommended_series.append({
+            "title": rec_title_tag.text.strip() if rec_title_tag else "Unknown Series",
+            "link": rec_link_tag["href"] if rec_link_tag else "#",
+            "image": rec_image_tag["src"] if rec_image_tag else "No Image"
+        })
+
+    return {
+        "title": title,
+        "thumbnail": thumbnail,
+        "background_image": background_image,
+        "description": description,
+        "duration": duration,
+        "streaming_sources": sources,
+        "other_episodes": episodes,
+        "recommended_series": recommended_series
+    }
+
+@app.get("/episodes")
+def get_anime_episode(url: str = Query(..., title="Episode URL")):
+    return scrape_anime_episode(url)
