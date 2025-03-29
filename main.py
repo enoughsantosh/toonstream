@@ -188,6 +188,8 @@ def search_animesug(term: str):
 
 
 
+
+            
 @app.get("/scrape")
 def scrape_anime_details(q: str = Query(..., description="Path of the series or movie")):
     url = f"https://toonstream.co{q}"
@@ -203,33 +205,58 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
 
     # Extract common details
     title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None
+    
+    # Thumbnail extraction
     thumbnail_tag = soup.select_one(".post-thumbnail img")
-    thumbnail = thumbnail_tag["data-src"] if thumbnail_tag else None
-    background_tag = soup.select_one(".bghd img")
+    thumbnail = thumbnail_tag["src"] if thumbnail_tag and thumbnail_tag.has_attr("src") else None
+    
+    # Background image extraction
+    background_tag = soup.select_one(".bghd img.TPostBg")
     background_image = background_tag["src"] if background_tag else None
+    
     description_tag = soup.select_one(".description p")
     description = description_tag.text.strip() if description_tag else None
      
     # Check if it's a series or a movie based on the URL pattern
     if q.startswith("/series/"):
         # Extract series-specific details
-        seasons = [s.text.strip() for s in soup.select(".aa-cnt .sel-temp a")]
+        seasons = [s.text.strip() for s in soup.select(".choose-season .aa-cnt li a")]
         no_of_seasons = len(seasons)
-        episodes_tag = soup.find("span", class_="episodes")
+        
+        # Episode count extraction
+        episodes_tag = soup.select_one(".episodes span")
         no_of_episodes = int(episodes_tag.find("span").text.strip()) if episodes_tag else None
-        post_id = soup.body.get("class")
-        post_id = next((cls.split("-")[-1] for cls in post_id if cls.startswith("postid-")), None)
+        
+        # Extract all episodes
+        episodes = []
+        for episode in soup.select("#episode_by_temp li"):
+            num = episode.select_one(".num-epi").text.strip() if episode.select_one(".num-epi") else None
+            ep_title = episode.select_one(".entry-title").text.strip() if episode.select_one(".entry-title") else None
+            ep_url = episode.select_one("a.lnk-blk")["href"] if episode.select_one("a.lnk-blk") else None
+            episodes.append({
+                "episode_number": num,
+                "title": ep_title,
+                "url": ep_url
+            })
+
+        # Extract genres
+        genres = [a.text.strip() for a in soup.select(".genres a")]
+        
+        # Extract cast
+        cast = [a.text.strip() for a in soup.select(".loadactor a")]
 
         return {
             "type": "series",
             "title": title,
-            "post_id": post_id,
             "thumbnail": thumbnail,
             "background_image": background_image,
             "description": description,
+            "genres": genres,
+            "cast": cast,
             "no_of_seasons": no_of_seasons,
             "no_of_episodes": no_of_episodes,
             "seasons_available": seasons,
+            "episodes": episodes
         }
 
     elif q.startswith("/movies/"):
@@ -237,12 +264,19 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
         duration_tag = soup.select_one(".duration")
         duration = duration_tag.text.strip() if duration_tag else None
         
-
+        # Extract sources
         sources = []  
         for iframe in soup.select(".video iframe"):  
             src = iframe.get("data-src") or iframe.get("src")  
             if src:  
-                sources.append(src)  
+                sources.append(src)
+                
+        # Extract genres
+        genres = [a.text.strip() for a in soup.select(".genres a")]
+        
+        # Extract cast
+        cast = [a.text.strip() for a in soup.select(".loadactor a")]
+
         return {
             "type": "movie",
             "title": title,
@@ -250,6 +284,8 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
             "background_image": background_image,
             "description": description,
             "duration": duration,
+            "genres": genres,
+            "cast": cast,
             "sources": sources,
         }
 
