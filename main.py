@@ -378,7 +378,7 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
             ep_title = episode.select_one(".entry-title").text.strip() if episode.select_one(".entry-title") else None
             ep_url = episode.select_one("a.lnk-blk")["href"] if episode.select_one("a.lnk-blk") else None
             episodes.append({
-                "episodes_number": num,
+                "episode_number": num,
                 "title": ep_title,
                 "url": ep_url
             })
