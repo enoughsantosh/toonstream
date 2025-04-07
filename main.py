@@ -250,9 +250,11 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
     
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Extract common details
-    title_tag = soup.find("h1", class_="entry-title")
-title = title_tag.text.strip() if title_tag else None
+
+    # Extract common details  
+    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None  
+    
+    
     
     # Extract post ID from body class
     post_id = None
