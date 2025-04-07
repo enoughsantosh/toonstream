@@ -252,7 +252,7 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
 
 
     # Extract common details  
-    title = soup.find("h2", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None  
+    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None  
     
     
     
