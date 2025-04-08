@@ -432,3 +432,112 @@ def scrape_anime_episode(url):
 @app.get("/episodes")
 def get_anime_episode(url: str = Query(..., title="Episode URL")):
     return scrape_anime_episode(url)
+
+
+
+@app.get("/scraping")
+def scrapes_anime_details(q: str = Query(..., description="Path of the series or movie")):
+    url = f"https://toonstream.co/series/solo-leveling/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        return {"error": f"Failed to retrieve data: {str(e)}"}
+    
+    soup = BeautifulSoup(response.text, "html.parser")
+
+
+    title = soup.find("h1", class_="entry-title")
+    title = title.text.strip() if title else None
+
+    post_id = None
+    body_classes = soup.find('body').get('class', [])
+    for cls in body_classes:
+        if cls.startswith('postid-'):
+            post_id = cls.split('-')[-1]
+            break
+
+    thumbnail = soup.select_one(".post-thumbnail img")
+    thumbnail = thumbnail["src"] if thumbnail and thumbnail.has_attr("src") else None
+
+    background = soup.select_one(".bghd img.TPostBg")
+    background_image = background["src"] if background else None
+
+    description = soup.select_one(".description p")
+    description = description.text.strip() if description else None
+
+    if path.startswith("/series/"):
+        seasons = [s.text.strip() for s in soup.select(".choose-season .aa-cnt li a")]
+        no_of_seasons = len(seasons)
+
+        episodes_info = soup.select_one(".episodes")
+        no_of_episodes = None
+        if episodes_info:
+            spans = episodes_info.find_all("span")
+            if len(spans) >= 2:
+                try:
+                    no_of_episodes = int(spans[1].text.strip())
+                except ValueError:
+                    pass
+
+        episodes = []
+        for ep in soup.select("#episode_by_temp li"):
+            ep_num = ep.select_one(".num-epi")
+            ep_title = ep.select_one(".entry-title")
+            ep_url = ep.select_one("a.lnk-blk")
+            episodes.append({
+                "episode_number": ep_num.text.strip() if ep_num else None,
+                "title": ep_title.text.strip() if ep_title else None,
+                "url": ep_url["href"] if ep_url else None
+            })
+
+        genres = [a.text.strip() for a in soup.select(".genres a")]
+        cast = [a.text.strip() for a in soup.select(".loadactor a")]
+
+        return {
+            "type": "series",
+            "post_id": post_id,
+            "title": title,
+            "thumbnail": thumbnail,
+            "background_image": background_image,
+            "description": description,
+            "genres": genres,
+            "cast": cast,
+            "no_of_seasons": no_of_seasons,
+            "no_of_episodes": no_of_episodes,
+            "seasons_available": seasons,
+            "episodes": episodes
+        }
+
+    elif path.startswith("/movies/"):
+        duration_tag = soup.select_one(".duration")
+        duration = duration_tag.text.strip() if duration_tag else None
+
+        sources = []
+        for iframe in soup.select(".video iframe"):
+            src = iframe.get("data-src") or iframe.get("src")
+            if src:
+                sources.append(src)
+
+        genres = [a.text.strip() for a in soup.select(".genres a")]
+        cast = [a.text.strip() for a in soup.select(".loadactor a")]
+
+        return {
+            "type": "movie",
+            "post_id": post_id,
+            "title": title,
+            "thumbnail": thumbnail,
+            "background_image": background_image,
+            "description": description,
+            "duration": duration,
+            "genres": genres,
+            "cast": cast,
+            "sources": sources,
+        }
+
+    else:
+        return {"error": "Invalid path. Must start with /series/ or /movies/"}
