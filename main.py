@@ -21,7 +21,7 @@ def home():
 # Homepage 
 @app.get("/home")
 def scrape_toonstream():
-    url = "https://toonstream.co/"
+    url = "https://toonstream.love/"
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -80,7 +80,7 @@ def scrape_toonstream():
 @app.get("/type")
 def get_category(type: str = Query(..., title="Anime Category")):
     """Fetch anime/movies from the given category type"""
-    url = f"https://toonstream.co/category/{type}"
+    url = f"https://toonstream.love/category/{type}"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -119,7 +119,7 @@ def get_category(type: str = Query(..., title="Anime Category")):
 
 @app.get("/search")
 def scrape_anime_details(q: str):
-    url = f"https://toonstream.co/?s={q}"
+    url = f"https://toonstream.love/?s={q}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -150,7 +150,7 @@ def scrape_anime_details(q: str):
 
 @app.get("/searchsug")
 def search_animesug(term: str):
-    url = "https://toonstream.co/wp-admin/admin-ajax.php"
+    url = "https://toonstream.love/wp-admin/admin-ajax.php"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "Mozilla/5.0"
@@ -186,7 +186,7 @@ def search_animesug(term: str):
         
 
 async def fetch_season_data(season: int, post: int):
-    url = "https://toonstream.co/wp-admin/admin-ajax.php"
+    url = "https://toonstream.love/wp-admin/admin-ajax.php"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "Mozilla/5.0"
@@ -237,7 +237,7 @@ async def get_season_episodes(season: int = Query(...), post: int = Query(...)):
 
 @app.get("/scrape")
 def scrape_anime_details(q: str = Query(..., description="Path of the series or movie")):
-    url = f"https://toonstream.co{q}"
+    url = f"https://toonstream.love{q}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
