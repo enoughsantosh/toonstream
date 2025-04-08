@@ -436,8 +436,8 @@ def get_anime_episode(url: str = Query(..., title="Episode URL")):
 
 
 @app.get("/scraping")
-def scrapes_anime_details(q: str = Query(..., description="Path of the series or movie")):
-    url = f"https://toonstream.co/series/solo-leveling/"
+def scrapes_sanime_details(q: str = Query(..., description="Path of the series or movie")):
+    url = f"https://toonstream.love{q}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -449,7 +449,6 @@ def scrapes_anime_details(q: str = Query(..., description="Path of the series or
         return {"error": f"Failed to retrieve data: {str(e)}"}
     
     soup = BeautifulSoup(response.text, "html.parser")
-
 
     title = soup.find("h1", class_="entry-title")
     title = title.text.strip() if title else None
