@@ -469,7 +469,7 @@ def scrapes_sanime_details(q: str = Query(..., description="Path of the series o
     description = soup.select_one(".description p")
     description = description.text.strip() if description else None
 
-    if path.startswith("/series/"):
+    if q.startswith("/series/"):
         seasons = [s.text.strip() for s in soup.select(".choose-season .aa-cnt li a")]
         no_of_seasons = len(seasons)
 
@@ -512,7 +512,7 @@ def scrapes_sanime_details(q: str = Query(..., description="Path of the series o
             "episodes": episodes
         }
 
-    elif path.startswith("/movies/"):
+    elif q.startswith("/movies/"):
         duration_tag = soup.select_one(".duration")
         duration = duration_tag.text.strip() if duration_tag else None
 
