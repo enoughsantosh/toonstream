@@ -252,9 +252,8 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
 
 
     # Extract common details  
-    title = soup.find("h1", class_="entry-title").text.strip() if soup.find("h1", class_="entry-title") else None  
-    
-    
+    title = soup.find("h1", class_="entry-title")
+    title = title.text.strip() if title else None
     
     # Extract post ID from body class
     post_id = None
@@ -265,8 +264,8 @@ def scrape_anime_details(q: str = Query(..., description="Path of the series or 
             break
     
     # Thumbnail extraction
-    thumbnail_tag = soup.select_one(".post-thumbnail img")
-    thumbnail = thumbnail_tag["src"] if thumbnail_tag and thumbnail_tag.has_attr("src") else None
+    thumbnail = soup.select_one(".post-thumbnail img")
+    thumbnail = thumbnail["src"] if thumbnail and thumbnail.has_attr("src") else None
     
     # Background image extraction
     background_tag = soup.select_one(".bghd img.TPostBg")
